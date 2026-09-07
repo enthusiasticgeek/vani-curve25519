@@ -1,0 +1,75 @@
+// Host-runnable validation for curve25519's core-only (no self-tests)
+// subset. Run with:
+//   vanic run test/host_core_test.vani
+//   vanic run test/host_core_test.vani --backend=c
+//
+// Drives the same "abc" Ed25519 KAT src/lib.vani's own
+// ed25519_self_test covers, entirely through core.vani's own
+// functions -- proves core.vani alone (no lib.vani, and transitively
+// no crypto_hash/src/lib.vani either) is sufficient for a real
+// pubkey+sign+verify round trip, not just that it parses.
+
+use "../src/core.vani";
+
+fn main() -> i64 {
+  let seed: [u8; 32] = [
+    0x00 as u8, 0x01 as u8, 0x02 as u8, 0x03 as u8, 0x04 as u8, 0x05 as u8, 0x06 as u8, 0x07 as u8,
+    0x08 as u8, 0x09 as u8, 0x0a as u8, 0x0b as u8, 0x0c as u8, 0x0d as u8, 0x0e as u8, 0x0f as u8,
+    0x10 as u8, 0x11 as u8, 0x12 as u8, 0x13 as u8, 0x14 as u8, 0x15 as u8, 0x16 as u8, 0x17 as u8,
+    0x18 as u8, 0x19 as u8, 0x1a as u8, 0x1b as u8, 0x1c as u8, 0x1d as u8, 0x1e as u8, 0x1f as u8
+  ];
+  let expected_pub: [u8; 32] = [
+    0x03 as u8, 0xa1 as u8, 0x07 as u8, 0xbf as u8, 0xf3 as u8, 0xce as u8, 0x10 as u8, 0xbe as u8,
+    0x1d as u8, 0x70 as u8, 0xdd as u8, 0x18 as u8, 0xe7 as u8, 0x4b as u8, 0xc0 as u8, 0x99 as u8,
+    0x67 as u8, 0xe4 as u8, 0xd6 as u8, 0x30 as u8, 0x9b as u8, 0xa5 as u8, 0x0d as u8, 0x5f as u8,
+    0x1d as u8, 0xdc as u8, 0x86 as u8, 0x64 as u8, 0x12 as u8, 0x55 as u8, 0x31 as u8, 0xb8 as u8
+  ];
+
+  let pub_out: [u8; 32] = ed25519_secret_to_public(ref seed);
+  let i: i64 = 0;
+  while i < 32 {
+    assert pub_out[i] == expected_pub[i];
+    i = i + 1;
+  }
+
+  let msg: [u8; 512] = ed25519_zero512_bytes();
+  msg[0] = 0x61 as u8;
+  msg[1] = 0x62 as u8;
+  msg[2] = 0x63 as u8;
+  let sig: [u8; 64] = ed25519_sign(ref seed, ref msg, 3);
+  assert ed25519_verify(ref pub_out, ref msg, 3, ref sig) == 1;
+
+  let bad_msg: [u8; 512] = ed25519_zero512_bytes();
+  bad_msg[0] = 0x61 as u8;
+  bad_msg[1] = 0x62 as u8;
+  bad_msg[2] = 0x64 as u8;
+  assert ed25519_verify(ref pub_out, ref bad_msg, 3, ref sig) == 0;
+
+  let k: [u8; 32] = [
+    0xa5 as u8, 0x46 as u8, 0xe3 as u8, 0x6b as u8, 0xf0 as u8, 0x52 as u8, 0x7c as u8, 0x9d as u8,
+    0x3b as u8, 0x16 as u8, 0x15 as u8, 0x4b as u8, 0x82 as u8, 0x46 as u8, 0x5e as u8, 0xdd as u8,
+    0x62 as u8, 0x14 as u8, 0x4c as u8, 0x0a as u8, 0xc1 as u8, 0xfc as u8, 0x5a as u8, 0x18 as u8,
+    0x50 as u8, 0x6a as u8, 0x22 as u8, 0x44 as u8, 0xba as u8, 0x44 as u8, 0x9a as u8, 0xc4 as u8
+  ];
+  let u_in: [u8; 32] = [
+    0xe6 as u8, 0xdb as u8, 0x68 as u8, 0x67 as u8, 0x58 as u8, 0x30 as u8, 0x30 as u8, 0xdb as u8,
+    0x35 as u8, 0x94 as u8, 0xc1 as u8, 0xa4 as u8, 0x24 as u8, 0xb1 as u8, 0x5f as u8, 0x7c as u8,
+    0x72 as u8, 0x66 as u8, 0x24 as u8, 0xec as u8, 0x26 as u8, 0xb3 as u8, 0x35 as u8, 0x3b as u8,
+    0x10 as u8, 0xa9 as u8, 0x03 as u8, 0xa6 as u8, 0xd0 as u8, 0xab as u8, 0x1c as u8, 0x4c as u8
+  ];
+  let expected_x25519: [u8; 32] = [
+    0xc3 as u8, 0xda as u8, 0x55 as u8, 0x37 as u8, 0x9d as u8, 0xe9 as u8, 0xc6 as u8, 0x90 as u8,
+    0x8e as u8, 0x94 as u8, 0xea as u8, 0x4d as u8, 0xf2 as u8, 0x8d as u8, 0x08 as u8, 0x4f as u8,
+    0x32 as u8, 0xec as u8, 0xcf as u8, 0x03 as u8, 0x49 as u8, 0x1c as u8, 0x71 as u8, 0xf7 as u8,
+    0x54 as u8, 0xb4 as u8, 0x07 as u8, 0x55 as u8, 0x77 as u8, 0xa2 as u8, 0x85 as u8, 0x52 as u8
+  ];
+  let x_out: [u8; 32] = x25519_scalarmult(ref k, ref u_in);
+  let xi: i64 = 0;
+  while xi < 32 {
+    assert x_out[xi] == expected_x25519[xi];
+    xi = xi + 1;
+  }
+
+  print "curve25519 core: X25519 + Ed25519 (no self-test layer) PASS";
+  return 0;
+}

@@ -1,10 +1,10 @@
 [package]
 name        = "curve25519"
-version     = "0.1.0"
+version     = "0.2.0"
 entry       = "src/lib.vani"
 authors     = "enthusiasticgeek"
 license     = "Apache-2.0"
-description = "field25519 (GF(2^255-19)), X25519 (RFC 7748), and Ed25519 (RFC 8032), pure vani, hardware-agnostic and heap-free. Extracted from DhruvaOS's Pi 4/5 port so any consumer can share one implementation."
+description = "field25519 (GF(2^255-19)), X25519 (RFC 7748), and Ed25519 (RFC 8032, unbounded-length msg via streaming SHA-512), pure vani, hardware-agnostic and heap-free. core.vani variant for consumers with a naming conflict. Extracted from DhruvaOS's Pi 4/5 port so any consumer can share one implementation."
 registry    = "kosh"
 
 [deps]

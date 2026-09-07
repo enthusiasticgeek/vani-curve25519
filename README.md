@@ -25,6 +25,20 @@ relative `use` in `src/lib.vani` — **not** declared as a `vani.toml`
 comment for the specifics, and `vani-compiler/docs/TODO_CURRENT.md`
 BUG-234 upstream).
 
+## Two variants: `src/lib.vani` vs `src/core.vani`
+
+`src/lib.vani` is the full API (below) — use this unless you have a
+specific reason not to. `src/core.vani` is the SAME functionality
+minus `x25519_self_test`/`ed25519_self_test`, for a consumer whose
+own code already defines a function of one of those exact names (or
+`sha256_hash`/`sha512_hash`/etc, transitively — `core.vani` depends
+only on `crypto_hash/src/core.vani`, never `crypto_hash/src/lib.vani`)
+and would otherwise collide when `use`-ing this package — e.g.
+DhruvaOS's Pi 1 kernel, which has its own pre-existing `x25519_
+self_test`/`ed25519_self_test`. See `core.vani`'s own header comment
+for the full story. Kept in sync with `lib.vani` by construction
+(subset, not a separate implementation).
+
 ## API
 
 Structs:
@@ -49,13 +63,16 @@ fn x25519_self_test() -> i64   // 1 = pass, 0 = fail; no I/O side effects
 Ed25519:
 ```
 fn ed25519_secret_to_public(secret: ref [u8; 32]) -> [u8; 32]
-fn ed25519_sign(secret: ref [u8; 32], msg: ref [u8; 64], msg_len: i64) -> [u8; 64]
-fn ed25519_verify(pubkey: ref [u8; 32], msg: ref [u8; 64], msg_len: i64, sig: ref [u8; 64]) -> i64
+fn ed25519_sign(secret: ref [u8; 32], msg: ref [u8; 512], msg_len: i64) -> [u8; 64]
+fn ed25519_verify(pubkey: ref [u8; 32], msg: ref [u8; 512], msg_len: i64, sig: ref [u8; 64]) -> i64
 fn ed25519_self_test() -> i64   // 1 = pass, 0 = fail; no I/O side effects
 ```
 
-`msg` is capped at 64 bytes in v0.1.0 (see `ed25519_sign`'s own
-comment) — sign a pre-hashed digest yourself for longer messages.
+`msg` is capped at 512 bytes (v0.2.0, up from 64 in v0.1.0) — a
+practical stack-buffer size, not an algorithmic limit: the hashing
+itself streams (`ed25519_hash_2block_msg`, internal) and has no
+length cap at all. Sign a pre-hashed digest yourself for something
+larger than 512 bytes.
 
 The self-test functions return `1`/`0` and print nothing, same
 convention as `crypto_hash`'s own.
