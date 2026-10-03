@@ -67,31 +67,45 @@ use "../vendor/crypto_hash/src/lib.vani";
 // multiplied by 38, twice, then canonicalize) -- unchanged math, only
 // the by-value/limb-array mechanics differ.
 
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn fe_zero() -> [u32; 8] {
   return [0 as u32; 8];
 }
+#[bounded_stack(bytes=68)]
+#[wcet(cycles=24)]
 fn fe9_zero() -> [u32; 9] {
   return [0 as u32; 9];
 }
+#[bounded_stack(bytes=96)]
+#[wcet(cycles=38)]
 fn fe16_zero() -> [u32; 16] {
   return [0 as u32; 16];
 }
 
 // p = 2^255 - 19.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn x25519_p() -> [u32; 8] {
   return [0xFFFFFFED as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0x7FFFFFFF as u32];
 }
 // p, zero-extended to 9 limbs, for field25519_reduce16's own
 // 9-limb canonicalization compare/subtract.
+#[bounded_stack(bytes=68)]
+#[wcet(cycles=24)]
 fn x25519_p9() -> [u32; 9] {
   return [0xFFFFFFED as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0x7FFFFFFF as u32, 0 as u32];
 }
 // p - 2, the fixed exponent field25519_invert's own Fermat's-
 // little-theorem square-and-multiply raises a value to.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn x25519_pm2() -> [u32; 8] {
   return [0xFFFFFFEB as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0x7FFFFFFF as u32];
 }
 // The Montgomery-curve constant a24 = (486662-2)/4 = 121665.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn x25519_a24() -> [u32; 8] {
   return [121665 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32, 0 as u32];
 }
@@ -104,6 +118,7 @@ fn x25519_a24() -> [u32; 8] {
 // plain wrapping arithmetic rather than reporting/checking a carry
 // that's provably always 0 in practice, the same kind of proven-safe
 // simplification round 88's own IP checksum work already applied).
+#[bounded_stack(bytes=224)]
 fn bignum_add8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let carry: u32 = 0 as u32;
@@ -127,6 +142,7 @@ fn bignum_add8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
 // this exact wrapped value (see its own comment for the modular-
 // arithmetic identity that makes wrapped_diff + p == (a-b+p) mod
 // 2^256 exactly, with no actual 256-bit overflow, whenever a<b<p).
+#[bounded_stack(bytes=224)]
 fn bignum_sub8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let borrow: u32 = 0 as u32;
@@ -147,6 +163,7 @@ fn bignum_sub8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
 
 // 1 if a>b, -1 if a<b, 0 if equal (8 limbs, most-significant limb
 // decides first).
+#[bounded_stack(bytes=96)]
 fn bignum_cmp8(a: ref [u32; 8], b: ref [u32; 8]) -> i64 {
   let i: i64 = 7;
   while i >= 0 {
@@ -170,6 +187,7 @@ fn bignum_cmp8(a: ref [u32; 8], b: ref [u32; 8]) -> i64 {
 // carry still can't exceed u64::MAX (worst case sums to exactly
 // 2^64-1) -- same construction and same proof kernel_main.vani's own
 // bignum_mul_raw comment already gives.
+#[bounded_stack(bytes=400)]
 fn bignum_mul8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 16] {
   let out: [u32; 16] = fe16_zero();
   let i: i64 = 0;
@@ -201,6 +219,7 @@ fn bignum_mul8(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 16] {
   return out;
 }
 
+#[bounded_stack(bytes=236)]
 fn bignum_add9(a: ref [u32; 9], b: ref [u32; 9]) -> [u32; 9] {
   let out: [u32; 9] = fe9_zero();
   let carry: u32 = 0 as u32;
@@ -219,6 +238,7 @@ fn bignum_add9(a: ref [u32; 9], b: ref [u32; 9]) -> [u32; 9] {
   return out;
 }
 
+#[bounded_stack(bytes=236)]
 fn bignum_sub9(a: ref [u32; 9], b: ref [u32; 9]) -> [u32; 9] {
   let out: [u32; 9] = fe9_zero();
   let borrow: u32 = 0 as u32;
@@ -237,6 +257,7 @@ fn bignum_sub9(a: ref [u32; 9], b: ref [u32; 9]) -> [u32; 9] {
   return out;
 }
 
+#[bounded_stack(bytes=96)]
 fn bignum_cmp9(a: ref [u32; 9], b: ref [u32; 9]) -> i64 {
   let i: i64 = 8;
   while i >= 0 {
@@ -257,6 +278,7 @@ fn bignum_cmp9(a: ref [u32; 9], b: ref [u32; 9]) -> i64 {
 // value < p. See this section's own header comment for the fold
 // algorithm (unchanged from kernel_main.vani's own field25519_
 // reduce16 -- only the by-value/limb mechanics differ).
+#[bounded_stack(bytes=756)]
 fn field25519_reduce16(product16: ref [u32; 16]) -> [u32; 8] {
   // Fold 1: fold_t = high_8_limbs(product16) * 38 (9 limbs).
   let fold_t: [u32; 9] = fe9_zero();
@@ -309,6 +331,7 @@ fn field25519_reduce16(product16: ref [u32; 16]) -> [u32; 8] {
 }
 
 // out = (a + b) mod p.
+#[bounded_stack(bytes=400)]
 fn field25519_add(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   let sum: [u32; 8] = bignum_add8(a, b);
   let p_const: [u32; 8] = x25519_p();
@@ -323,6 +346,7 @@ fn field25519_add(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
 // computed as a plain wrapping 8-limb add) yields exactly (a-b+p) mod
 // 2^256 with no genuine 256-bit overflow, since a-b+p is already in
 // (0,p) -- see this file's own header comment for the full identity.
+#[bounded_stack(bytes=400)]
 fn field25519_sub(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   if bignum_cmp8(a, b) < 0 {
     let diff: [u32; 8] = bignum_sub8(a, b);
@@ -332,15 +356,19 @@ fn field25519_sub(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   return bignum_sub8(a, b);
 }
 
+#[bounded_stack(bytes=900)]
 fn field25519_mul(a: ref [u32; 8], b: ref [u32; 8]) -> [u32; 8] {
   let product: [u32; 16] = bignum_mul8(a, b);
   return field25519_reduce16(ref product);
 }
 
+#[bounded_stack(bytes=972)]
 fn field25519_sqr(a: ref [u32; 8]) -> [u32; 8] {
   return field25519_mul(a, a);
 }
 
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=88)]
 fn x25519_get_bit(buf: ref [u32; 8], bit_index: i64) -> u32 {
   let limb_idx: i64 = bit_index / 32;
   let bit_in_limb: u32 = (bit_index - (limb_idx * 32)) as u32;
@@ -352,6 +380,7 @@ fn x25519_get_bit(buf: ref [u32; 8], bit_index: i64) -> u32 {
 // known exponent p-2 (255 bits), matching kernel_main.vani's own
 // field25519_invert exactly (not the optimized addition chain real
 // high-performance implementations use).
+#[bounded_stack(bytes=1236)]
 fn field25519_invert(a: ref [u32; 8]) -> [u32; 8] {
   let base: [u32; 8] = fe_zero();
   let bi: i64 = 0;
@@ -379,6 +408,7 @@ fn field25519_invert(a: ref [u32; 8]) -> [u32; 8] {
 // every real caller here already holds its own owned copy of k, so
 // there's no in-place-mutation need this port's by-value convention
 // can't already satisfy more simply).
+#[bounded_stack(bytes=184)]
 fn x25519_clamp_scalar(k: ref [u32; 8]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let i: i64 = 0;
@@ -391,6 +421,7 @@ fn x25519_clamp_scalar(k: ref [u32; 8]) -> [u32; 8] {
   return out;
 }
 
+#[bounded_stack(bytes=200)]
 fn fe_from_bytes_le(bytes: ref [u8; 32]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let i: i64 = 0;
@@ -405,6 +436,7 @@ fn fe_from_bytes_le(bytes: ref [u8; 32]) -> [u32; 8] {
   return out;
 }
 
+#[bounded_stack(bytes=124)]
 fn fe_to_bytes_le(limbs: ref [u32; 8]) -> [u8; 32] {
   let out: [u8; 32] = [0 as u8; 32];
   let i: i64 = 0;
@@ -428,6 +460,7 @@ fn fe_to_bytes_le(limbs: ref [u32; 8]) -> [u8; 32] {
 // _sub's own single conditional subtraction/addition of p, same
 // documented, non-oversight gap kernel_main.vani's own comment
 // already flags (docs/TODO.md has the note).
+#[bounded_stack(bytes=2348)]
 fn x25519_scalarmult(k_bytes: ref [u8; 32], u_in_bytes: ref [u8; 32]) -> [u8; 32] {
   let k_raw: [u32; 8] = fe_from_bytes_le(k_bytes);
   let k: [u32; 8] = x25519_clamp_scalar(ref k_raw);
@@ -535,6 +568,7 @@ fn x25519_scalarmult(k_bytes: ref [u8; 32], u_in_bytes: ref [u8; 32]) -> [u8; 32
 // trials). Not re-derived here -- reusing that already-verified
 // ground truth directly, same as SHA-256/SHA-512's own KATs reuse
 // FIPS's.
+#[bounded_stack(bytes=2668)]
 fn x25519_self_test() -> i64 {
   let ok: i64 = 1;
 
@@ -632,31 +666,44 @@ struct Ed25519DecompressResult { ok: i64, x: [u32; 8], y: [u32; 8], z: [u32; 8],
 struct Ed25519ExpandResult { a: [u32; 8], prefix: [u8; 32] }
 
 // Edwards curve parameter d = -121665/121666 mod p.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn ed25519_d() -> [u32; 8] {
   return [0x135978A3 as u32, 0x75EB4DCA as u32, 0x4141D8AB as u32, 0x00700A4D as u32, 0x7779E898 as u32, 0x8CC74079 as u32, 0x2B6FFE73 as u32, 0x52036CEE as u32];
 }
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn ed25519_2d() -> [u32; 8] {
   return [0x26B2F159 as u32, 0xEBD69B94 as u32, 0x8283B156 as u32, 0x00E0149A as u32, 0xEEF3D130 as u32, 0x198E80F2 as u32, 0x56DFFCE7 as u32, 0x2406D9DC as u32];
 }
 // A square root of -1 mod p, used by ed25519_recover_x to try
 // the second of the two candidate square roots when the first fails.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn ed25519_sqrt_m1() -> [u32; 8] {
   return [0x4A0EA0B0 as u32, 0xC4EE1B27 as u32, 0xAD2FE478 as u32, 0x2F431806 as u32, 0x3DFBD7A7 as u32, 0x2B4D0099 as u32, 0x4FC1DF0B as u32, 0x2B832480 as u32];
 }
 // L, the order of the base point's subgroup: 2^252 + 27742317777372353535851937790883648493.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn ed25519_l() -> [u32; 8] {
   return [0x5CF5D3ED as u32, 0x5812631A as u32, 0xA2F79CD6 as u32, 0x14DEF9DE as u32, 0x00000000 as u32, 0x00000000 as u32, 0x00000000 as u32, 0x10000000 as u32];
 }
 // (p+3)/8 = 2^252 - 2 -- see this section's header comment for why
 // this is a compile-time constant here, not derived at runtime.
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=22)]
 fn ed25519_pm2_over8() -> [u32; 8] {
   return [0xFFFFFFFE as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0xFFFFFFFF as u32, 0x0FFFFFFF as u32];
 }
+#[bounded_stack(bytes=160)]
+#[wcet(cycles=41)]
 fn fe_one() -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   out[0] = 1 as u32;
   return out;
 }
+#[bounded_stack(bytes=184)]
 fn fe_copy(a: ref [u32; 8]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let i: i64 = 0;
@@ -666,10 +713,14 @@ fn fe_copy(a: ref [u32; 8]) -> [u32; 8] {
   }
   return out;
 }
+#[bounded_stack(bytes=320)]
+#[wcet(cycles=152)]
 fn ed25519_identity_point() -> Ed25519Point {
   return Ed25519Point { x: fe_zero(), y: fe_one(), z: fe_one(), t: fe_zero() };
 }
 // The standard base point G, in extended coordinates (Z=1, T=X*Y).
+#[bounded_stack(bytes=448)]
+#[wcet(cycles=115)]
 fn ed25519_base_point() -> Ed25519Point {
   let gx: [u32; 8] = [0x8F25D51A as u32, 0xC9562D60 as u32, 0x9525A7B2 as u32, 0x692CC760 as u32, 0xFDD6DC5C as u32, 0xC0A4E231 as u32, 0xCD6E53FE as u32, 0x216936D3 as u32];
   let gy: [u32; 8] = [0x66666658 as u32, 0x66666666 as u32, 0x66666666 as u32, 0x66666666 as u32, 0x66666666 as u32, 0x66666666 as u32, 0x66666666 as u32, 0x66666666 as u32];
@@ -678,12 +729,18 @@ fn ed25519_base_point() -> Ed25519Point {
   return Ed25519Point { x: gx, y: gy, z: gz, t: gt };
 }
 
+#[bounded_stack(bytes=64)]
+#[wcet(cycles=70)]
 fn ed25519_zero32_bytes() -> [u8; 32] {
   return [0 as u8; 32];
 }
+#[bounded_stack(bytes=96)]
+#[wcet(cycles=134)]
 fn ed25519_zero64_bytes() -> [u8; 64] {
   return [0 as u8; 64];
 }
+#[bounded_stack(bytes=2016)]
+#[wcet(cycles=3238)]
 fn ed25519_zero512_bytes() -> [u8; 512] {
   let a: [u8; 256] = ed25519_zero256_bytes();
   let out: [u8; 512] = [
@@ -722,6 +779,8 @@ fn ed25519_zero512_bytes() -> [u8; 512] {
   ];
   return out;
 }
+#[bounded_stack(bytes=704)]
+#[wcet(cycles=1174)]
 fn ed25519_zero256_bytes() -> [u8; 256] {
   let a: [u8; 64] = ed25519_zero64_bytes();
   let out: [u8; 256] = [
@@ -751,6 +810,7 @@ fn ed25519_zero256_bytes() -> [u8; 256] {
 // exceeds 2^254, well inside 256 bits) -- same "provably always 0"
 // simplification round 95's own bignum_add8/sub8 already
 // apply for the same reason.
+#[bounded_stack(bytes=204)]
 fn bignum_shl1_8(a: ref [u32; 8]) -> [u32; 8] {
   let out: [u32; 8] = fe_zero();
   let carry: u32 = 0 as u32;
@@ -768,6 +828,7 @@ fn bignum_shl1_8(a: ref [u32; 8]) -> [u32; 8] {
 
 // A 64-byte little-endian byte buffer (a SHA-512 digest) reinterpreted
 // as 16 u32 limbs -- feeds ed25519_scalar_mod_l's own reduction.
+#[bounded_stack(bytes=296)]
 fn bytes64_to_limbs16_le(bytes: ref [u8; 64]) -> [u32; 16] {
   let out: [u32; 16] = fe16_zero();
   let i: i64 = 0;
@@ -785,6 +846,8 @@ fn bytes64_to_limbs16_le(bytes: ref [u8; 64]) -> [u32; 16] {
 // MSB-first bit `bit_index_from_msb` of a 512-bit (16-limb) value --
 // ed25519_scalar_mod_l's own long division needs to process its
 // input from the most-significant bit down.
+#[bounded_stack(bytes=72)]
+#[wcet(cycles=97)]
 fn ed25519_get_bit_msb_first_limbs16(buf: ref [u32; 16], bit_index_from_msb: i64) -> u32 {
   let bit_from_lsb: i64 = 511 - bit_index_from_msb;
   let limb_idx: i64 = bit_from_lsb / 32;
@@ -799,6 +862,7 @@ fn ed25519_get_bit_msb_first_limbs16(buf: ref [u32; 16], bit_index_from_msb: i64
 // field25519_reduce16's fold trick. Used both to reduce a raw
 // SHA-512 digest (via bytes64_to_limbs16_le first) and to reduce
 // a wide k*a product (bignum_mul8's own 16-limb output).
+#[bounded_stack(bytes=444)]
 fn ed25519_scalar_mod_l(input16: ref [u32; 16]) -> [u32; 8] {
   let remainder: [u32; 8] = fe_zero();
   let l_const: [u32; 8] = ed25519_l();
@@ -819,6 +883,7 @@ fn ed25519_scalar_mod_l(input16: ref [u32; 16]) -> [u32; 8] {
 
 // (x + y) mod L, for x, y already < L -- bignum_add8's own
 // discarded carry is provably 0 here too (x+y < 2L < 2^254).
+#[bounded_stack(bytes=400)]
 fn ed25519_scalar_add_mod_l(x: ref [u32; 8], y: ref [u32; 8]) -> [u32; 8] {
   let sum: [u32; 8] = bignum_add8(x, y);
   let l_const: [u32; 8] = ed25519_l();
@@ -831,6 +896,7 @@ fn ed25519_scalar_add_mod_l(x: ref [u32; 8], y: ref [u32; 8]) -> [u32; 8] {
 // (k * a) mod L -- k, a need not themselves be < L (Ed25519's own
 // clamped secret scalar `a` can be up to just under 2^255, genuinely
 // larger than L); the wide product is computed first, THEN reduced.
+#[bounded_stack(bytes=588)]
 fn ed25519_scalar_mul_mod_l(k: ref [u32; 8], a: ref [u32; 8]) -> [u32; 8] {
   let product16: [u32; 16] = bignum_mul8(k, a);
   return ed25519_scalar_mod_l(ref product16);
@@ -844,6 +910,7 @@ fn ed25519_scalar_mul_mod_l(k: ref [u32; 8], a: ref [u32; 8]) -> [u32; 8] {
 // kernel_main.vani's own version, just without its 8 named persistent
 // scratch buffers (ed25519_tmp1_get..tmp8_get) -- owned locals plus
 // the return-by-value convention make those unnecessary here.
+#[bounded_stack(bytes=1684)]
 fn ed25519_point_add(p: ref Ed25519Point, q: ref Ed25519Point) -> Ed25519Point {
   let py_minus_px: [u32; 8] = field25519_sub(ref p.y, ref p.x);
   let qy_minus_qx: [u32; 8] = field25519_sub(ref q.y, ref q.x);
@@ -877,6 +944,7 @@ fn ed25519_point_add(p: ref Ed25519Point, q: ref Ed25519Point) -> Ed25519Point {
 // isn't). Plain LSB-first double-and-add; `ed25519_point_add(ref
 // b, ref b)` doubling passes the same owned local as both arguments,
 // confirmed legal (see this section's own header comment).
+#[bounded_stack(bytes=2392)]
 fn ed25519_point_mul(scalar: ref [u32; 8], p: ref Ed25519Point) -> Ed25519Point {
   let q: Ed25519Point = ed25519_identity_point();
   let b: Ed25519Point = Ed25519Point { x: fe_copy(ref p.x), y: fe_copy(ref p.y), z: fe_copy(ref p.z), t: fe_copy(ref p.t) };
@@ -896,6 +964,7 @@ fn ed25519_point_mul(scalar: ref [u32; 8], p: ref Ed25519Point) -> Ed25519Point 
 // (Y1*Z2 == Y2*Z1) mod p) -- comparing raw coordinates directly would
 // be wrong since the same affine point has infinitely many valid
 // (X,Y,Z,T) representations.
+#[bounded_stack(bytes=1100)]
 fn ed25519_point_equal(p: ref Ed25519Point, q: ref Ed25519Point) -> i64 {
   let lhs1: [u32; 8] = field25519_mul(ref p.x, ref q.z);
   let rhs1: [u32; 8] = field25519_mul(ref q.x, ref p.z);
@@ -915,6 +984,7 @@ fn ed25519_point_equal(p: ref Ed25519Point, q: ref Ed25519Point) -> i64 {
 // square-and-multiply over the fixed, precomputed exponent (see this
 // section's own header comment for why it's a constant here, not
 // derived at runtime the way kernel_main.vani's own version does).
+#[bounded_stack(bytes=1220)]
 fn ed25519_sqrt_candidate(x2: ref [u32; 8]) -> [u32; 8] {
   let exponent: [u32; 8] = ed25519_pm2_over8();
   let result: [u32; 8] = fe_one();
@@ -934,6 +1004,7 @@ fn ed25519_sqrt_candidate(x2: ref [u32; 8]) -> [u32; 8] {
 // section 5.1.3. `ok` is 0 (with `x` left as all-zero) if y is out of
 // range or no valid x exists -- "reject, don't guess," same posture
 // as the rest of this codebase's bounds/format checks.
+#[bounded_stack(bytes=1996)]
 fn ed25519_recover_x(y: ref [u32; 8], sign: u32) -> Ed25519RecoverXResult {
   let p_const: [u32; 8] = x25519_p();
   if bignum_cmp8(y, ref p_const) >= 0 {
@@ -982,6 +1053,7 @@ fn ed25519_recover_x(y: ref [u32; 8], sign: u32) -> Ed25519RecoverXResult {
   return Ed25519RecoverXResult { ok: 1, x: candidate };
 }
 
+#[bounded_stack(bytes=1448)]
 fn ed25519_point_compress(p: ref Ed25519Point) -> [u8; 32] {
   let zinv: [u32; 8] = field25519_invert(ref p.z);
   let x: [u32; 8] = field25519_mul(ref p.x, ref zinv);
@@ -996,6 +1068,7 @@ fn ed25519_point_compress(p: ref Ed25519Point) -> [u8; 32] {
 
 // Decompresses a 32-byte encoded point. `ok` is 0 (with x/y/z/t left
 // as all-zero) on a malformed/invalid encoding.
+#[bounded_stack(bytes=2500)]
 fn ed25519_point_decompress(s: ref [u8; 32]) -> Ed25519DecompressResult {
   let sign: u32 = ((s[31] as u32) >> (7 as u32)) & (1 as u32);
   let y_bytes: [u8; 32] = ed25519_zero32_bytes();
@@ -1020,6 +1093,7 @@ fn ed25519_point_decompress(s: ref [u8; 32]) -> Ed25519DecompressResult {
 // SHA-512(secret) split into a clamped scalar `a` (RFC 8032 section
 // 5.1.5 clamping: clear the low 3 bits, clear bit 255, set bit 254)
 // and a `prefix` used only to derive the per-message nonce below.
+#[bounded_stack(bytes=3544)]
 fn ed25519_secret_expand(secret: ref [u8; 32]) -> Ed25519ExpandResult {
   let scratch: [u8; 256] = ed25519_zero256_bytes();
   let i: i64 = 0;
@@ -1062,6 +1136,7 @@ fn ed25519_secret_expand(secret: ref [u8; 32]) -> Ed25519ExpandResult {
   return Ed25519ExpandResult { a: a_scalar, prefix: prefix };
 }
 
+#[bounded_stack(bytes=3936)]
 fn ed25519_secret_to_public(secret: ref [u8; 32]) -> [u8; 32] {
   let expanded: Ed25519ExpandResult = ed25519_secret_expand(secret);
   let g: Ed25519Point = ed25519_base_point();
@@ -1079,6 +1154,7 @@ fn ed25519_secret_to_public(secret: ref [u8; 32]) -> [u8; 32] {
 // both of RFC 8032's own two hash shapes: prefix||msg
 // (`has_block2`=0, `ed25519_sign`'s own r) and R||A||msg
 // (`has_block2`=1, both sign's own k and verify's own k).
+#[bounded_stack(bytes=4128)]
 fn ed25519_hash_2block_msg(block1: ref [u8; 32], block2: ref [u8; 32], has_block2: i64, msg: ref [u8; 512], msg_len: i64) -> [u8; 64] {
   let ctx: Sha512Ctx = sha512_init();
   let chunk1: [u8; 256] = ed25519_zero256_bytes();
@@ -1122,6 +1198,7 @@ fn ed25519_hash_2block_msg(block1: ref [u8; 32], block2: ref [u8; 32], has_block
 // this bound is purely "how big a single stack array to reserve," not
 // an algorithmic limit. A consumer signing something larger needs its
 // own pre-hash step (hash the real message first, sign the digest).
+#[bounded_stack(bytes=5304)]
 fn ed25519_sign(secret: ref [u8; 32], msg: ref [u8; 512], msg_len: i64) -> [u8; 64] {
   let expanded: Ed25519ExpandResult = ed25519_secret_expand(secret);
   let g: Ed25519Point = ed25519_base_point();
@@ -1165,6 +1242,7 @@ fn ed25519_sign(secret: ref [u8; 32], msg: ref [u8; 512], msg_len: i64) -> [u8; 
 // covers every rejection path explicitly (malformed public key,
 // malformed R, s >= L) rather than letting any fall through to an
 // ambiguous result.
+#[bounded_stack(bytes=5584)]
 fn ed25519_verify(pubkey: ref [u8; 32], msg: ref [u8; 512], msg_len: i64, sig: ref [u8; 64]) -> i64 {
   let dec_a: Ed25519DecompressResult = ed25519_point_decompress(pubkey);
   if dec_a.ok == 0 {
@@ -1216,6 +1294,7 @@ fn ed25519_verify(pubkey: ref [u8; 32], msg: ref [u8; 512], msg_len: i64, sig: r
 // verification, AND both tamper-rejection paths (flipped signature
 // bit, flipped message bit) -- the actual security property, not just
 // "produces something."
+#[bounded_stack(bytes=7720)]
 fn ed25519_self_test() -> i64 {
   let ok: i64 = 1;
 
